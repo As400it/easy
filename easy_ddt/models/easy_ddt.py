@@ -2,6 +2,7 @@
 ##############################################################################
 #
 #    Copyright (C) 2017 Dinamiche Aziendali srl
+#    @author Gianmarco Conte <gconte@dinamicheaziendali.it>
 #    All Rights Reserved
 #
 #    This program is free software: you can redistribute it and/or modify
@@ -19,7 +20,7 @@
 #
 ##############################################################################
 
-from openerp import models, fields, api
+from odoo import models, fields, api
 from datetime import datetime
 
 
@@ -38,19 +39,20 @@ class StockPicking(models.Model):
         'stock.ddt.type', string='DdT Type', default=_default_ddt_type)
     ddt_number = fields.Char(string='DdT Number',  copy=False)
     carriage_condition_id = fields.Many2one(
-        'stock.picking.carriage_condition', 'Carriage Condition')
+        'stock.picking.carriage_condition', string='Carriage Condition')
     goods_description_id = fields.Many2one(
-        'stock.picking.goods_description', 'Description of Goods')
+        'stock.picking.goods_description', string='Description of Goods')
     transportation_reason_id = fields.Many2one(
         'stock.picking.transportation_reason',
-        'Reason for Transportation')
+        string='Reason for Transportation')
     transportation_method_id = fields.Many2one(
         'stock.picking.transportation_method',
-        'Method of Transportation')
+        string='Method of Transportation')
     date_transport_ddt = fields.Date(string='Delivery note Date')
     time_transport_ddt = fields.Float(string='Delivery Note Start Time')
     ddt_notes = fields.Text(string='Delivery Note Notes')
     picking_type_code = fields.Selection(related="picking_type_id.code")
+    # weight_net = fields.Float(string="Net Weight") #da inserire in form
 
     @api.onchange('partner_id', 'ddt_type_id')
     def on_change_partner(self):
@@ -71,42 +73,64 @@ class StockPicking(models.Model):
     @api.multi
     def get_ddt_number(self):
         for ddt in self:
+            addr = ddt.partner_id.address_get(['delivery', 'invoice'])
             if not ddt.ddt_number and ddt.ddt_type_id:
                 obj_sequence = self.env["ir.sequence"]
                 sequence = ddt.ddt_type_id.sequence_id
-                ddt.ddt_number = obj_sequence.next_by_id(sequence.id)
+                ddt.ddt_number = sequence.next_by_id()
                 ddt.min_date = datetime.now()
+                # ddt.ddt_number = obj_sequence.next_by_id(sequence.id)
             return self.env['report'].\
                 get_action(self, 'easy_ddt.report_easy_ddt_main')
         return True
+
+    # @api.multi
+    # def ddt_get_location(self, location_id):
+    #     model_warehouse = self.env['stock.warehouse']
+    #     # import pdb; pdb.set_trace()
+    #     warehouse = model_warehouse.search(
+    #         [('lot_stock_id', '=',
+    #           location_id),
+    #          ])
+    #     data=[warehouse.partner_id.id, warehouse.partner_id.name]
+    #     data= [warehouse.partner_id.name,
+    #           warehouse.partner_id.street,
+    #            (warehouse.partner_id.zip + ' ' +
+    #           warehouse.partner_id.city + ' ' +
+    #           '(' +warehouse.partner_id.state_id.name +')'),]
+    #     return data
 
     @api.multi
     def ddt_get_location(self, ddtlocation):
         model_warehouse = self.env['stock.warehouse']
         model_location = self.env['stock.location']
         locations = model_location.browse(ddtlocation)
-        location =  locations.location_id.id
+        location = locations.location_id.id
         warehouses = model_warehouse.search(
             [('view_location_id', '=',
               location),
              ])
-        for warehouse in warehouses:
-            data = [warehouse.partner_id.name,
-                    '{street}'.format(street=warehouse.partner_id.street),
-                    ('{zip}'.format(zip=warehouse.partner_id.zip) + ' ' +
-                     '{city}'.format(city=warehouse.partner_id.city) + ' ' +
-                     '(' + '{state}'.format(
-                        state=warehouse.partner_id.state_id.name)
-                     + ')'), ]
-            return data
-        # return false
+        if warehouses:
+            for warehouse in warehouses:
+                data = [warehouse.partner_id.name,
+                        '{street}'.format(street=warehouse.partner_id.street),
+                        ('{zip}'.format(zip=warehouse.partner_id.zip) + ' ' +
+                         '{city}'.format(city=warehouse.partner_id.city) + ' ' +
+                         '(' + '{state}'.format(
+                            state=warehouse.partner_id.state_id.name)
+                         + ')'), ]
+                return data
+        else:
+            return ''
 
     @api.multi
     def ddt_time_report(self, time_ddt):
         hh = int(time_ddt)
         mm = time_ddt - hh
         mms = str(int(round(mm*60)))
-        if(len(mms) == 1):
-            mms = '0' + mms
+        if(len(mms)==1):
+            mms='0'+mms
         data = str(hh)+":"+mms
         return data
+
+    # self.partner_id.address_get(['delivery', 'invoice'])

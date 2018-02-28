@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<openerp>
-    <data>
+<odoo>
         <record id="view_picking_form_ddt" model="ir.ui.view">
             <field name="name">ddt.stock.picking.form</field>
             <field name="model">stock.picking</field>
@@ -46,39 +45,4 @@
                 </data>
             </field>
         </record>
-
-
-        <record id="stock_picking_tree_view_inherit" model="ir.ui.view">
-            <field name="name">stock.picking.inherit.tree</field>
-            <field name="model">stock.picking</field>
-            <field name="inherit_id" ref="stock.vpicktree"/>
-            <field name="arch" type="xml">
-                <field name="name" position="before">
-                    <field name="ddt_number"/>
-                </field>
-                <field name="partner_id" position="after">
-                    <field name="transportation_reason_id"/>
-                </field>
-            </field>
-        </record>
-
-        <!--SEARCH-->
-        <record id="stock_picking_search_view_inherit" model="ir.ui.view">
-            <field name="name">stock.picking.inherit.search</field>
-            <field name="model">stock.picking</field>
-            <field name="inherit_id" ref="stock.view_picking_internal_search"/>
-            <field name="arch" type="xml">
-                <field name="name" position="after">
-                    <field name="ddt_number"/>
-                    <field name="transportation_reason_id"/>
-                </field>
-                <filter string="Status" position="after">
-                    <filter name="transportation_reason_id" string="Causale Trasporto"
-                            context="{'group_by': 'transportation_reason_id'}"/>
-                </filter>
-            </field>
-        </record>
-
-
-    </data>
-</openerp>
+</odoo>
