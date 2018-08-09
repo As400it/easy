@@ -38,6 +38,7 @@ class StockPicking(models.Model):
     ddt_type_id = fields.Many2one(
         'stock.ddt.type', string='DdT Type', default=_default_ddt_type)
     ddt_number = fields.Char(string='DdT Number',  copy=False)
+    ddt_date = fields.Date(string='DDT Date')
     carriage_condition_id = fields.Many2one(
         'stock.picking.carriage_condition', string='Carriage Condition')
     goods_description_id = fields.Many2one(
@@ -101,27 +102,20 @@ class StockPicking(models.Model):
     #     return data
 
     @api.multi
-    def ddt_get_location(self, ddtlocation):
+    def ddt_get_location(self, location_id):
         model_warehouse = self.env['stock.warehouse']
-        model_location = self.env['stock.location']
-        locations = model_location.browse(ddtlocation)
-        location = locations.location_id.id
-        warehouses = model_warehouse.search(
-            [('view_location_id', '=',
-              location),
+        warehouse = model_warehouse.search(
+            [('lot_stock_id', '=',
+              location_id),
              ])
-        if warehouses:
-            for warehouse in warehouses:
-                data = [warehouse.partner_id.name,
-                        '{street}'.format(street=warehouse.partner_id.street),
-                        ('{zip}'.format(zip=warehouse.partner_id.zip) + ' ' +
-                         '{city}'.format(city=warehouse.partner_id.city) + ' ' +
-                         '(' + '{state}'.format(
-                            state=warehouse.partner_id.state_id.name)
-                         + ')'), ]
-                return data
-        else:
-            return ''
+        data = [warehouse.partner_id.id, warehouse.partner_id.name]
+        if warehouse.partner_id:
+            data = [warehouse.partner_id.name,
+                    warehouse.partner_id.street,
+                    (warehouse.partner_id.zip + ' ' +
+                     warehouse.partner_id.city + ' ' +
+                     '(' + warehouse.partner_id.state_id.name + ')' if warehouse.partner_id.state_id else ''), ]
+        return data
 
     @api.multi
     def ddt_time_report(self, time_ddt):
